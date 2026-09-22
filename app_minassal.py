@@ -130,9 +130,10 @@ def gerar_pdf_relatorio(promotor, loja, cidade, df_preenchido, df_vendas_origina
             m_rec_str = f"{markup_rec:.1f}%"
             m_prat_str = "--"
             
-            # Busca inteligente: filtra pelo código do produto na base geral
+            # FILTRO EXATO DE ONTEM PARA O HISTÓRICO DA LOJA
             df_hist = df_vendas_original[
-                df_vendas_original['PRODUTO CODIGO'].astype(str).str.replace('.0', '', regex=False).str.strip() == cod
+                (df_vendas_original['CLIENTE NOME'] == loja) & 
+                (df_vendas_original['PRODUTO CODIGO'].astype(str).str.replace('.0', '', regex=False).str.strip() == cod)
             ]
             
             dt_fmt = "Desconhecida"
@@ -142,16 +143,27 @@ def gerar_pdf_relatorio(promotor, loja, cidade, df_preenchido, df_vendas_origina
             if not df_hist.empty:
                 df_hist['DATA_DT'] = pd.to_datetime(df_hist['DATA'], errors='coerce')
                 df_hist = df_hist.sort_values(by='DATA_DT', ascending=False)
+                ultima_linha = df_hist.iloc[0]
                 
-                # Tenta achar registro da mesma loja, senão pega o mais recente da base geral para o produto
-                df_loja_hist = df_hist[df_hist['CLIENTE NOME'] == loja]
-                linha_alvo = df_loja_hist.iloc[0] if not df_loja_hist.empty else df_hist.iloc[0]
-                
-                dt_raw = linha_alvo['DATA_DT']
+                dt_raw = ultima_linha['DATA_DT']
                 if pd.notna(dt_raw):
                     dt_fmt = dt_raw.strftime('%d/%m/%Y')
-                op_tipo = str(linha_alvo.get('OPERACAO', 'VENDA')).strip().upper()
-                rca_resp = str(linha_alvo.get('RCA NOME', 'Não identificado')).strip().upper()
+                op_tipo = str(ultima_linha.get('OPERACAO', 'VENDA')).strip().upper()
+                rca_resp = str(ultima_linha.get('RCA NOME', 'Não identificado')).strip().upper()
+            else:
+                # Fallback caso a loja específica não tenha histórico daquele produto na base dela
+                df_hist_geral = df_vendas_original[
+                    df_vendas_original['PRODUTO CODIGO'].astype(str).str.replace('.0', '', regex=False).str.strip() == cod
+                ]
+                if not df_hist_geral.empty:
+                    df_hist_geral['DATA_DT'] = pd.to_datetime(df_hist_geral['DATA'], errors='coerce')
+                    df_hist_geral = df_hist_geral.sort_values(by='DATA_DT', ascending=False)
+                    ultima_linha = df_hist_geral.iloc[0]
+                    dt_raw = ultima_linha['DATA_DT']
+                    if pd.notna(dt_raw):
+                        dt_fmt = dt_raw.strftime('%d/%m/%Y')
+                    op_tipo = str(ultima_linha.get('OPERACAO', 'VENDA')).strip().upper()
+                    rca_resp = str(ultima_linha.get('RCA NOME', 'Não identificado')).strip().upper()
                 
             produtos_ausentes_detalhes.append({
                 "produto": str(linha.PRODUTO).replace("⭐ ", ""),

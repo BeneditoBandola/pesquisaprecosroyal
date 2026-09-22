@@ -59,7 +59,6 @@ def carregar_dados(caminho):
     if not caminho: return pd.DataFrame()
     try:
         if str(caminho).endswith('.csv'):
-            # Tenta ler com separador automático ou vírgula/ponto-e-vírgula
             try:
                 df = pd.read_csv(caminho, sep=',', encoding='utf-8', low_memory=False)
                 if len(df.columns) <= 1:
@@ -96,7 +95,7 @@ def gerar_pdf_relatorio(promotor, loja, cidade, df_preenchido, df_vendas_origina
     estilo_tabela = [
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#E2001A")),
         ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
-        ('ALIGN', (0,0), (0,-1), 'LEFT'),      
+        ('ALIGN', (0,0), (0,-1), 'LEFT'),    
         ('ALIGN', (1,0), (-1,-1), 'CENTER'),    
         ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
         ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
@@ -132,8 +131,7 @@ def gerar_pdf_relatorio(promotor, loja, cidade, df_preenchido, df_vendas_origina
             m_prat_str = "--"
             
             df_hist = df_vendas_original[
-                (df_vendas_original['CLIENTE NOME'] == loja) & 
-                (df_vendas_original['PRODUTO CODIGO'].astype(str).str.replace('.0', '', regex=False).str.strip() == cod)
+                df_vendas_original['PRODUTO CODIGO'].astype(str).str.replace('.0', '', regex=False).str.strip() == cod
             ]
             
             dt_fmt = "Desconhecida"
@@ -143,13 +141,15 @@ def gerar_pdf_relatorio(promotor, loja, cidade, df_preenchido, df_vendas_origina
             if not df_hist.empty:
                 df_hist['DATA_DT'] = pd.to_datetime(df_hist['DATA'], errors='coerce')
                 df_hist = df_hist.sort_values(by='DATA_DT', ascending=False)
-                ultima_linha = df_hist.iloc[0]
                 
-                dt_raw = ultima_linha['DATA_DT']
+                df_loja_hist = df_hist[df_hist['CLIENTE NOME'] == loja]
+                linha_alvo = df_loja_hist.iloc[0] if not df_loja_hist.empty else df_hist.iloc[0]
+                
+                dt_raw = linha_alvo['DATA_DT']
                 if pd.notna(dt_raw):
                     dt_fmt = dt_raw.strftime('%d/%m/%Y')
-                op_tipo = str(ultima_linha.get('OPERACAO', 'VENDA')).strip().upper()
-                rca_resp = str(ultima_linha.get('RCA NOME', 'Não identificado')).strip().upper()
+                op_tipo = str(linha_alvo.get('OPERACAO', 'VENDA')).strip().upper()
+                rca_resp = str(linha_alvo.get('RCA NOME', 'Não identificado')).strip().upper()
                 
             produtos_ausentes_detalhes.append({
                 "produto": str(linha.PRODUTO).replace("⭐ ", ""),
@@ -180,7 +180,7 @@ def gerar_pdf_relatorio(promotor, loja, cidade, df_preenchido, df_vendas_origina
                         sit, cor = f"ACIMA +{diff:.1f}%", colors.red
                     else:
                         sit, cor = "CORRETO (Abaixo/Igual)", colors.green
-                
+        
         data.append([nome, cod, p_sug_str, m_rec_str, p_loja_str, m_prat_str, sit])
         estilo_tabela.append(('TEXTCOLOR', (3, idx), (3, idx), colors.HexColor("#166534")))
         if not nao_tem and p_loja > 0:

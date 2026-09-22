@@ -130,7 +130,7 @@ def gerar_pdf_relatorio(promotor, loja, cidade, df_preenchido, df_vendas_origina
             m_rec_str = f"{markup_rec:.1f}%"
             m_prat_str = "--"
             
-            # FILTRO EXATO DE ONTEM PARA O HISTÓRICO DA LOJA
+            # Busca do histórico exatamente igual a ontem, garantindo a leitura do RCA NOME
             df_hist = df_vendas_original[
                 (df_vendas_original['CLIENTE NOME'] == loja) & 
                 (df_vendas_original['PRODUTO CODIGO'].astype(str).str.replace('.0', '', regex=False).str.strip() == cod)
@@ -151,7 +151,7 @@ def gerar_pdf_relatorio(promotor, loja, cidade, df_preenchido, df_vendas_origina
                 op_tipo = str(ultima_linha.get('OPERACAO', 'VENDA')).strip().upper()
                 rca_resp = str(ultima_linha.get('RCA NOME', 'Não identificado')).strip().upper()
             else:
-                # Fallback caso a loja específica não tenha histórico daquele produto na base dela
+                # Se não achar na loja específica, busca na base geral pelo código do produto
                 df_hist_geral = df_vendas_original[
                     df_vendas_original['PRODUTO CODIGO'].astype(str).str.replace('.0', '', regex=False).str.strip() == cod
                 ]

@@ -130,7 +130,6 @@ def gerar_pdf_relatorio(promotor, loja, cidade, df_preenchido, df_vendas_origina
             m_rec_str = f"{markup_rec:.1f}%"
             m_prat_str = "--"
             
-            # Busca do histórico exatamente igual a ontem, garantindo a leitura do RCA NOME
             df_hist = df_vendas_original[
                 (df_vendas_original['CLIENTE NOME'] == loja) & 
                 (df_vendas_original['PRODUTO CODIGO'].astype(str).str.replace('.0', '', regex=False).str.strip() == cod)
@@ -150,20 +149,6 @@ def gerar_pdf_relatorio(promotor, loja, cidade, df_preenchido, df_vendas_origina
                     dt_fmt = dt_raw.strftime('%d/%m/%Y')
                 op_tipo = str(ultima_linha.get('OPERACAO', 'VENDA')).strip().upper()
                 rca_resp = str(ultima_linha.get('RCA NOME', 'Não identificado')).strip().upper()
-            else:
-                # Se não achar na loja específica, busca na base geral pelo código do produto
-                df_hist_geral = df_vendas_original[
-                    df_vendas_original['PRODUTO CODIGO'].astype(str).str.replace('.0', '', regex=False).str.strip() == cod
-                ]
-                if not df_hist_geral.empty:
-                    df_hist_geral['DATA_DT'] = pd.to_datetime(df_hist_geral['DATA'], errors='coerce')
-                    df_hist_geral = df_hist_geral.sort_values(by='DATA_DT', ascending=False)
-                    ultima_linha = df_hist_geral.iloc[0]
-                    dt_raw = ultima_linha['DATA_DT']
-                    if pd.notna(dt_raw):
-                        dt_fmt = dt_raw.strftime('%d/%m/%Y')
-                    op_tipo = str(ultima_linha.get('OPERACAO', 'VENDA')).strip().upper()
-                    rca_resp = str(ultima_linha.get('RCA NOME', 'Não identificado')).strip().upper()
                 
             produtos_ausentes_detalhes.append({
                 "produto": str(linha.PRODUTO).replace("⭐ ", ""),
